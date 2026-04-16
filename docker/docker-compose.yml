@@ -1,7 +1,12 @@
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:17
     container_name: paperclip-db
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
     environment:
       POSTGRES_USER: paperclip
       POSTGRES_PASSWORD: paperclip
@@ -12,7 +17,7 @@ services:
       timeout: 5s
       retries: 30
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - /Volumes/Dom-Cache/paperclip-db:/var/lib/postgresql/data
     networks:
       - paperclip-internal
 
@@ -20,7 +25,13 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+    image: paperclip-paperclip:latest
     container_name: paperclip
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2g
     environment:
       DATABASE_URL: postgres://paperclip:paperclip@db:5432/paperclip
       PORT: "3100"
@@ -31,7 +42,8 @@ services:
       BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}"
       PAPERCLIP_AGENT_JWT_SECRET: "${PAPERCLIP_AGENT_JWT_SECRET:?PAPERCLIP_AGENT_JWT_SECRET must be set}"
     volumes:
-      - paperclip-data:/paperclip
+      - ~/paperclip-data:/paperclip
+      - ~/.claude:/root/.claude:ro
     depends_on:
       db:
         condition: service_healthy
@@ -46,6 +58,4 @@ networks:
   tunnel-proxy:
     external: true
 
-volumes:
-  pgdata:
-  paperclip-data:
+# volumes: bind mounts used instead of named volumes (data lives on Dom-Cache and ~/paperclip-data)
